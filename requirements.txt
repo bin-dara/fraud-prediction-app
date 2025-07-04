@@ -15,5 +15,6 @@ imbalanced-learn==0.10.1
 joblib
 
 xgboost
+plotly==5.21.0
 
  
