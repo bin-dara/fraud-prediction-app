@@ -151,7 +151,7 @@ accuracy = accuracy_score(y_test, y_pred)
 # -----------------------------
 # ML PREDICTION SECTION
 # -----------------------------
-elif menu == "ML Prediction":
+if menu == "ML Prediction":
     st.title("🤖 ML Prediction")
     st.markdown("Fill in the form below to predict **Fraud** or **Not Fraud**")
 
