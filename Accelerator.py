@@ -134,42 +134,7 @@ accuracy = accuracy_score(y_test, y_pred)
 # -----------------------------
 # VISUALIZATION SECTION
 # -----------------------------
-if menu == "Visualization":
-    st.title("📈 Visualization")
-    num_cols = df.select_dtypes(include=np.number).columns.tolist()
-    
-    
 
-    st.subheader("Correlation Heatmap")
-    fig2 = px.imshow(df[num_cols].corr(), text_auto=True, color_continuous_scale='Blues')
-    st.plotly_chart(fig2, use_container_width=True)
-
-
-    st.subheader("Pie Chart - Amount Vs Fraud")
-pie_data = df.groupby("Is_fraud")["Amount"].sum().reset_index()
-pie_colors = [
-   # "#08306b",  # very dark blue
-   # "#08519c",  # dark
-   # "#2171b5",  # medium-dark
-    "#4292c6",  # medium
-    "#6baed6",  # medium-light
-    "#9ecae1",  # light
-    "#c6dbef"   # very light
-]
-
-pie_fig = px.pie(
-    pie_data,
-    names="Is_fraud",
-    values="Amount",
-    title="Sum of Amount by Transaction Type",
-    color_discrete_sequence=pie_colors
-)
-pie_fig.update_traces(hole=0, textinfo="percent+label")
-st.plotly_chart(pie_fig, use_container_width=True)
-
-
-        
-    
         
     
     
@@ -182,66 +147,6 @@ st.plotly_chart(pie_fig, use_container_width=True)
     # ---------------------------
     # Basic validation
     # ---------------------------
-st.subheader("Donut Chart - Amount Vs Transaction type")
-if "Transaction_type" in df.columns and "Amount" in df.columns:
-        # Group by Transaction Type
-        summary = df.groupby("Transaction_type")["Amount"].sum().reset_index()
-
-        
-        # ---------------------------
-        # Donut Chart
-        # ---------------------------
-        donut_colors = [
-    #"#08306b",  # very dark blue
-    "#08519c",  # dark
-    "#2171b5",  # medium-dark
-    "#4292c6",  # medium
-    "#6baed6",  # medium-light
-    "#9ecae1",  # light
-    "#c6dbef"   # very light
-]
-
-
-
-        fig = px.pie(
-            summary,
-            names="Transaction_type",
-            values="Amount",
-            hole=0.5,
-            title="Donut Chart - Sum of Amount by Transaction Type",
-            color_discrete_sequence=donut_colors
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-
-    # Check columns
-if "Is_high _risk_country" in df.columns and "Location" in df.columns:
-        # Clean/Standardize
-        df["Is_high_risk_country"] = df["Is_high_risk_country"].astype(str)
-        df["Location"] = df["Location"].astype(str)
-
-        # Group data
-        area_data = df.groupby(["Location", "Is_high_risk_country"]).size().reset_index(name="Count")
-
-        # Area chart using Plotly
-        fig = px.area(
-            area_data,
-            x="Location",
-            y="Risk",
-            color="Is High Risk Country",
-            title="High Risk Country by Location (Area Chart)",
-            color_discrete_sequence=px.colors.sequential.dense  # dark blue-style theme
-        )
-
-        fig.update_layout(
-            plot_bgcolor="#F9F9F9",
-            paper_bgcolor="#F9F9F9",
-            title_font_color="darkblue",
-            font_color="black"
-        )
-
-        st.plotly_chart(fig, use_container_width=True)
-
 
 # -----------------------------
 # ML PREDICTION SECTION
