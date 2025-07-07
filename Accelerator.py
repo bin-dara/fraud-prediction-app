@@ -182,7 +182,7 @@ st.plotly_chart(pie_fig, use_container_width=True)
     # ---------------------------
     # Basic validation
     # ---------------------------
-st.subheader("Pie Chart - Amount Vs Transaction type")
+st.subheader("Donut Chart - Amount Vs Transaction type")
 if "Transaction_type" in df.columns and "Amount" in df.columns:
         # Group by Transaction Type
         summary = df.groupby("Transaction_type")["Amount"].sum().reset_index()
