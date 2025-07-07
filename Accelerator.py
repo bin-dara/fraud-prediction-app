@@ -81,77 +81,170 @@ with st.sidebar:
 # -----------------------------
 # LOAD DATA
 # -----------------------------
+# -----------------------------
+# LOAD DATA
+# -----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv(r"financial_fraud_dataset.csv")
+    df = pd.read_csv(r"C:\Users\Dara Bandara\Downloads\financial_fraud_dataset.csv")
     return df
 
 df = load_data()
 
-# -----------------------------
-# CLEAN DATA
-# -----------------------------
-drop_cols = [col for col in df.columns if 'unnamed' in col.lower() or 'id' in col.lower() or 'timestamp' in col.lower()]
-df = df.drop(columns=drop_cols)
-
-# Guess target as last column
-target_col = df.columns[-1]
-
-# Label encode target if categorical
-if df[target_col].dtype == 'object':
-    le_target = LabelEncoder()
-    df[target_col] = le_target.fit_transform(df[target_col])
-else:
-    le_target = None
-
-# Separate features and target
-X_raw = df.drop(columns=[target_col])
-y = df[target_col]
-
-# Identify categorical columns
-cat_cols = X_raw.select_dtypes(include='object').columns.tolist()
-
-# Label encode categoricals
-label_encoders = {}
-for col in cat_cols:
-    le = LabelEncoder()
-    X_raw[col] = le.fit_transform(X_raw[col].astype(str))
-    label_encoders[col] = le
 
 # -----------------------------
-# TRAIN MODEL
+# CLEAN & PREPROCESS DATA
 # -----------------------------
-X_train, X_test, y_train, y_test = train_test_split(X_raw, y, test_size=0.2, random_state=42)
-clf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42)
-clf.fit(X_train, y_train)
-y_pred = clf.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
+@st.cache_data
+def preprocess_data(df):
+    # Drop unwanted columns
+    drop_cols = [col for col in df.columns if 'unnamed' in col.lower() or 'id' in col.lower() or 'timestamp' in col.lower()]
+    df = df.drop(columns=drop_cols)
+
+    # Guess target as last column
+    target_col = df.columns[-1]
+
+    # Label encode target if categorical
+    if df[target_col].dtype == 'object':
+        le_target = LabelEncoder()
+        df[target_col] = le_target.fit_transform(df[target_col])
+    else:
+        le_target = None
+
+    # Separate features and target
+    X_raw = df.drop(columns=[target_col])
+    y = df[target_col]
+
+    # Identify categorical columns
+    cat_cols = X_raw.select_dtypes(include='object').columns.tolist()
+
+    # Label encode categoricals
+    label_encoders = {}
+    for col in cat_cols:
+        le = LabelEncoder()
+        X_raw[col] = le.fit_transform(X_raw[col].astype(str))
+        label_encoders[col] = le
+
+    return df, X_raw, y, target_col, le_target, cat_cols, label_encoders
+
+df, X_raw, y, target_col, le_target, cat_cols, label_encoders = preprocess_data(df)
+
 
 # -----------------------------
-# EDA SECTION
+# TRAIN MODEL (cached)
 # -----------------------------
+@st.cache_resource
+def train_model(X, y):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    clf = RandomForestClassifier(n_estimators=200, max_depth=10, random_state=42)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    return clf, accuracy
+
+clf, accuracy = train_model(X_raw, y)
+
+
 
 # -----------------------------
 # VISUALIZATION SECTION
 # -----------------------------
-
-        
+if menu == "Visualization":
+    st.title("📈 Visualization")
+    num_cols = df.select_dtypes(include=np.number).columns.tolist()
     
     
+    st.subheader("Pie Chart - Amount Vs Fraud")
+    pie_data = df.groupby("Is_fraud")["Amount"].sum().reset_index()
+    pie_colors = [
+    # "#08306b",  # very dark blue
+    # "#08519c",  # dark
+    # "#2171b5",  # medium-dark
+        "#4292c6",  # medium
+        "#6baed6",  # medium-light
+        "#9ecae1",  # light
+        "#c6dbef"   # very light
+    ]
 
-        # ---------------
-        # LINE CHART
-        # ---------------
-    
+    pie_fig = px.pie(
+        pie_data,
+        names="Is_fraud",
+        values="Amount",
+        color_discrete_sequence=pie_colors
+    )
+    pie_fig.update_traces(hole=0, textinfo="percent+label")
+    st.plotly_chart(pie_fig, use_container_width=True)
 
-    # ---------------------------
-    # Basic validation
-    # ---------------------------
+
+    st.subheader("Correlation Heatmap")
+    fig2 = px.imshow(df[num_cols].corr(), text_auto=True, color_continuous_scale='Blues')
+    st.plotly_chart(fig2, use_container_width=True)
+
+
+    if "Transaction_type" in df.columns and "Amount" in df.columns:
+            # Group by Transaction Type
+            summary = df.groupby("Transaction_type")["Amount"].sum().reset_index()
+
+
+
+    st.subheader("Donut Chart - Amount Vs Fraud")        # ---------------------------
+            # Donut Chart
+            # ---------------------------
+    donut_colors = [
+        #"#08306b",  # very dark blue
+        "#08519c",  # dark
+        "#2171b5",  # medium-dark
+        "#4292c6",  # medium
+        "#6baed6",  # medium-light
+        "#9ecae1",  # light
+        "#c6dbef"   # very light
+    ]
+
+
+
+    fig = px.pie(
+        summary,
+        names="Transaction_type",
+        values="Amount",
+        hole=0.5,
+        color_discrete_sequence=donut_colors
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Check columns
+    if "Is_high _risk_country" in df.columns and "Location" in df.columns:
+            # Clean/Standardize
+            df["Is_high_risk_country"] = df["Is_high_risk_country"].astype(str)
+            df["Location"] = df["Location"].astype(str)
+
+            # Group data
+            area_data = df.groupby(["Location", "Is_high_risk_country"]).size().reset_index(name="Count")
+
+            # Area chart using Plotly
+            fig = px.area(
+                area_data,
+                x="Location",
+                y="Risk",
+                color="Is High Risk Country",
+                title="High Risk Country by Location (Area Chart)",
+                color_discrete_sequence=px.colors.sequential.dense  # dark blue-style theme
+            )
+
+            fig.update_layout(
+                plot_bgcolor="#F9F9F9",
+                paper_bgcolor="#F9F9F9",
+                title_font_color="darkblue",
+                font_color="black"
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
 
 # -----------------------------
 # ML PREDICTION SECTION
 # -----------------------------
-if menu == "ML Prediction":
+elif menu == "ML Prediction":
     st.title("🤖 ML Prediction")
     st.markdown("Fill in the form below to predict **Fraud** or **Not Fraud**")
 
