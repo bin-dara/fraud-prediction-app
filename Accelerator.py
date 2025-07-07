@@ -32,6 +32,10 @@ st.markdown(
     .css-1aumxhk {{
         padding: 2rem;
     }}
+        
+ 
+
+    
     </style>
     """,
     unsafe_allow_html=True
@@ -45,21 +49,41 @@ COMPANY_LOGO_URL = "https://booleandata.com/wp-content/uploads/2022/09/Boolean-l
 with st.sidebar:
     st.image(COMPANY_LOGO_URL, use_column_width=True)
     st.title("Navigation")
-    menu = st.radio("Go to", ["EDA", "Visualization", "ML Prediction"])
+    menu = st.radio("", ["Visualization", "ML Prediction"])
     st.markdown("---")
     st.subheader("About Company")
     st.markdown("""
         We are a cutting-edge technology firm specializing in AI and data science solutions. 
         Our mission is to deliver secure, scalable, and innovative fraud detection tools 
         for the financial industry.
+        
     """)
+    st.markdown("---")
+    st.subheader("Connect With Us")
+    st.markdown(
+        """
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="https://booleandata.ai/" target="_blank">🌐</a>
+            <a href="https://www.facebook.com/Booleandata" target="_blank">
+                <img src="https://cdn-icons-png.flaticon.com/24/1384/1384005.png" width="24">
+            </a>
+            <a href="https://www.youtube.com/channel/UCd4PC27NqQL5v9-1jvwKE2w" target="_blank">
+                <img src="https://cdn-icons-png.flaticon.com/24/1384/1384060.png" width="24">
+            </a>
+            <a href="https://www.linkedin.com/company/boolean-data-systems" target="_blank">
+                <img src="https://cdn-icons-png.flaticon.com/24/145/145807.png" width="24">
+            </a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 # -----------------------------
 # LOAD DATA
 # -----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("financial_fraud_dataset.csv")
+    df = pd.read_csv(r"financial_fraud_dataset.csv")
     return df
 
 df = load_data()
@@ -106,43 +130,119 @@ accuracy = accuracy_score(y_test, y_pred)
 # -----------------------------
 # EDA SECTION
 # -----------------------------
-if menu == "EDA":
-    st.title("📊 Exploratory Data Analysis")
-    st.subheader("Dataset Preview")
-    st.dataframe(df.head())
-
-    st.subheader("Data Summary")
-    st.write(df.describe())
-
-    st.subheader("Missing Values")
-    st.write(df.isnull().sum())
-
-    st.subheader("Class Distribution")
-    class_counts = df[target_col].value_counts().reset_index()
-    class_counts.columns = ['Class', 'Count']
-    st.bar_chart(class_counts.set_index('Class'))
 
 # -----------------------------
 # VISUALIZATION SECTION
 # -----------------------------
-elif menu == "Visualization":
+if menu == "Visualization":
     st.title("📈 Visualization")
     num_cols = df.select_dtypes(include=np.number).columns.tolist()
+    
+    
 
-    if len(num_cols) < 2:
-        st.warning("Not enough numeric columns for visualization.")
-    else:
-        x_axis = st.selectbox("X-Axis", num_cols)
-        y_axis = st.selectbox("Y-Axis", num_cols)
-        color_by = st.selectbox("Color By", [None] + list(df.columns))
+    st.subheader("Correlation Heatmap")
+    fig2 = px.imshow(df[num_cols].corr(), text_auto=True, color_continuous_scale='Blues')
+    st.plotly_chart(fig2, use_container_width=True)
 
-        if st.button("Generate Scatter Plot"):
-            fig = px.scatter(df, x=x_axis, y=y_axis, color=color_by)
-            st.plotly_chart(fig, use_container_width=True)
 
-        st.subheader("Correlation Heatmap")
-        fig2 = px.imshow(df[num_cols].corr(), text_auto=True, color_continuous_scale='Blues')
-        st.plotly_chart(fig2, use_container_width=True)
+    st.subheader("Pie Chart - Amount Vs Fraud")
+pie_data = df.groupby("Is_fraud")["Amount"].sum().reset_index()
+pie_colors = [
+   # "#08306b",  # very dark blue
+   # "#08519c",  # dark
+   # "#2171b5",  # medium-dark
+    "#4292c6",  # medium
+    "#6baed6",  # medium-light
+    "#9ecae1",  # light
+    "#c6dbef"   # very light
+]
+
+pie_fig = px.pie(
+    pie_data,
+    names="Is_fraud",
+    values="Amount",
+    title="Sum of Amount by Transaction Type",
+    color_discrete_sequence=pie_colors
+)
+pie_fig.update_traces(hole=0, textinfo="percent+label")
+st.plotly_chart(pie_fig, use_container_width=True)
+
+
+        
+    
+        
+    
+    
+
+        # ---------------
+        # LINE CHART
+        # ---------------
+    
+
+    # ---------------------------
+    # Basic validation
+    # ---------------------------
+if "Transaction_type" in df.columns and "Amount" in df.columns:
+        # Group by Transaction Type
+        summary = df.groupby("Transaction_type")["Amount"].sum().reset_index()
+
+        st.subheader("Sum of Amount by Transaction Type")
+        st.dataframe(summary)
+
+        # ---------------------------
+        # Donut Chart
+        # ---------------------------
+        donut_colors = [
+    #"#08306b",  # very dark blue
+    "#08519c",  # dark
+    "#2171b5",  # medium-dark
+    "#4292c6",  # medium
+    "#6baed6",  # medium-light
+    "#9ecae1",  # light
+    "#c6dbef"   # very light
+]
+
+
+
+        fig = px.pie(
+            summary,
+            names="Transaction_type",
+            values="Amount",
+            hole=0.5,
+            title="Donut Chart - Sum of Amount by Transaction Type",
+            color_discrete_sequence=donut_colors
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Check columns
+if "Is_high _risk_country" in df.columns and "Location" in df.columns:
+        # Clean/Standardize
+        df["Is_high_risk_country"] = df["Is_high_risk_country"].astype(str)
+        df["Location"] = df["Location"].astype(str)
+
+        # Group data
+        area_data = df.groupby(["Location", "Is_high_risk_country"]).size().reset_index(name="Count")
+
+        # Area chart using Plotly
+        fig = px.area(
+            area_data,
+            x="Location",
+            y="Risk",
+            color="Is High Risk Country",
+            title="High Risk Country by Location (Area Chart)",
+            color_discrete_sequence=px.colors.sequential.dense  # dark blue-style theme
+        )
+
+        fig.update_layout(
+            plot_bgcolor="#F9F9F9",
+            paper_bgcolor="#F9F9F9",
+            title_font_color="darkblue",
+            font_color="black"
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
 
 # -----------------------------
 # ML PREDICTION SECTION
