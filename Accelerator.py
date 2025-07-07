@@ -186,9 +186,7 @@ if "Transaction_type" in df.columns and "Amount" in df.columns:
         # Group by Transaction Type
         summary = df.groupby("Transaction_type")["Amount"].sum().reset_index()
 
-        st.subheader("Sum of Amount by Transaction Type")
-        st.dataframe(summary)
-
+        
         # ---------------------------
         # Donut Chart
         # ---------------------------
