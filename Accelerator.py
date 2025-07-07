@@ -86,7 +86,7 @@ with st.sidebar:
 # -----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv(r"C:\Users\Dara Bandara\Downloads\financial_fraud_dataset.csv")
+    df = pd.read_csv(r"financial_fraud_dataset.csv")
     return df
 
 df = load_data()
